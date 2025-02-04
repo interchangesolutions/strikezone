@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Ensure proper scaling on the iPad -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Strike Zone Target</title>
+  <style>
+    /* The strike zone container */
+    .strike-zone {
+      width: 300px;              /* Adjust width as needed */
+      height: 400px;             /* Adjust height as needed */
+      border: 2px solid #000;    /* Visual border for the strike zone */
+      position: relative;        /* Needed for absolute positioning of the target */
+      margin: 50px auto;         /* Center horizontally with some top margin */
+      background-color: #f7f7f7;   /* Light background color */
+    }
+
+    /* The target marker */
+    .target {
+      width: 20px;               /* Size of the target */
+      height: 20px;
+      background: red;           /* Target color */
+      border-radius: 50%;        /* Make it circular */
+      position: absolute;        /* Allows us to position it at the touch point */
+      transform: translate(-50%, -50%); /* Centers the marker on the touch point */
+      pointer-events: none;      /* So it doesn't block further touches */
+    }
+  </style>
+</head>
+<body>
+  <!-- Strike zone area -->
+  <div class="strike-zone" id="strikeZone"></div>
+
+  <script>
+    // Get a reference to the strike zone element
+    const strikeZone = document.getElementById('strikeZone');
+
+    // Function to create or move the target marker
+    function placeTarget(x, y) {
+      // Remove an existing target if it exists
+      const existingTarget = document.getElementById('target');
+      if (existingTarget) {
+        existingTarget.remove();
+      }
+      
+      // Create a new target element
+      const target = document.createElement('div');
+      target.classList.add('target');
+      target.id = 'target';
+      target.style.left = `${x}px`;
+      target.style.top = `${y}px`;
+      
+      // Append the target marker to the strike zone container
+      strikeZone.appendChild(target);
+    }
+
+    // Listen for touch events (for the iPad)
+    strikeZone.addEventListener('touchstart', function(event) {
+      event.preventDefault(); // Prevent default behaviors like scrolling
+      
+      const touch = event.touches[0];
+      const rect = strikeZone.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      placeTarget(x, y);
+    }, false);
+
+    // Also add a click listener for desktop testing (optional)
+    strikeZone.addEventListener('click', function(event) {
+      const rect = strikeZone.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      placeTarget(x, y);
+    });
+  </script>
+</body>
+</html>
