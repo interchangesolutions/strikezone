@@ -1,79 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <!-- Ensure proper scaling on the iPad -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Strike Zone Target</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baseball Strike Zone</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* The strike zone container */
+    /* Strike zone dimensions and grid overlay */
     .strike-zone {
-      width: 300px;              /* Adjust width as needed */
-      height: 400px;             /* Adjust height as needed */
-      border: 2px solid #000;    /* Visual border for the strike zone */
-      position: relative;        /* Needed for absolute positioning of the target */
-      margin: 50px auto;         /* Center horizontally with some top margin */
-      background-color: #f7f7f7;   /* Light background color */
+      position: relative;
+      width: 300px;
+      height: 400px;
     }
-
-    /* The target marker */
+    /* Create the 3x3 grid overlay using pseudo-elements */
+    .strike-zone::before,
+    .strike-zone::after {
+      content: '';
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+    /* Horizontal grid lines */
+    .strike-zone::before {
+      width: 100%;
+      height: 1px;
+      left: 0;
+      top: 33.33%;
+      box-shadow: 0 133.33px 0 rgba(0, 0, 0, 0.2);
+    }
+    /* Vertical grid lines */
+    .strike-zone::after {
+      height: 100%;
+      width: 1px;
+      top: 0;
+      left: 33.33%;
+      box-shadow: 100px 0 0 rgba(0, 0, 0, 0.2);
+    }
+    /* Strike target marker style */
     .target {
-      width: 20px;               /* Size of the target */
-      height: 20px;
-      background: red;           /* Target color */
-      border-radius: 50%;        /* Make it circular */
-      position: absolute;        /* Allows us to position it at the touch point */
-      transform: translate(-50%, -50%); /* Centers the marker on the touch point */
-      pointer-events: none;      /* So it doesn't block further touches */
+      width: 32px;
+      height: 32px;
+      background-color: #ef4444; /* Tailwind red-500 */
+      border-radius: 9999px;
+      position: absolute;
+      transform: translate(-50%, -50%);
+      transition: all 0.3s ease-out;
+    }
+    /* Pitcher's glove marker style */
+    .glove {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      transition: all 0.3s ease-out;
     }
   </style>
 </head>
-<body>
-  <!-- Strike zone area -->
-  <div class="strike-zone" id="strikeZone"></div>
-
+<body class="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+  <!-- Title -->
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">Baseball Strike Zone</h1>
+  
+  <!-- Selector Buttons -->
+  <div class="mb-4 flex space-x-4">
+    <button id="selectTarget" class="flex items-center px-4 py-2 rounded-md transition-colors bg-blue-600 text-white">
+      <!-- Target Icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      Strike Target
+    </button>
+    
+    <button id="selectGlove" class="flex items-center px-4 py-2 rounded-md transition-colors bg-gray-200 text-gray-800 hover:bg-gray-300">
+      <!-- Glove Icon (using a hand-like SVG) -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 12V4a2 2 0 0 1 4 0v8"></path>
+        <path d="M12 12v8"></path>
+        <path d="M16 12v-2a2 2 0 0 1 4 0v2"></path>
+      </svg>
+      Pitcher's Glove
+    </button>
+    
+    <button id="resetMarkers" class="flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+      Reset
+    </button>
+  </div>
+  
+  <!-- Strike Zone Area -->
+  <div id="strikeZone" class="strike-zone bg-gray-50 border-2 border-black cursor-pointer"></div>
+  
+  <!-- Subtext -->
+  <div class="mt-6 text-gray-600 text-center">
+    <p>Select a marker type and click in the strike zone to place it.</p>
+    <p>Currently selected: <span id="currentSelection" class="font-semibold">Strike Target</span></p>
+  </div>
+  
   <script>
-    // Get a reference to the strike zone element
     const strikeZone = document.getElementById('strikeZone');
-
-    // Function to create or move the target marker
-    function placeTarget(x, y) {
-      // Remove an existing target if it exists
-      const existingTarget = document.getElementById('target');
-      if (existingTarget) {
-        existingTarget.remove();
+    const selectTargetBtn = document.getElementById('selectTarget');
+    const selectGloveBtn = document.getElementById('selectGlove');
+    const resetBtn = document.getElementById('resetMarkers');
+    const currentSelectionText = document.getElementById('currentSelection');
+    
+    let currentSelection = 'target';
+    let targetPosition = null;
+    let glovePosition = null;
+    
+    function updateSelectionButtons() {
+      if (currentSelection === 'target') {
+        selectTargetBtn.classList.add('bg-blue-600', 'text-white');
+        selectTargetBtn.classList.remove('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+        selectGloveBtn.classList.add('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+        selectGloveBtn.classList.remove('bg-blue-600', 'text-white');
+        currentSelectionText.textContent = 'Strike Target';
+      } else {
+        selectGloveBtn.classList.add('bg-blue-600', 'text-white');
+        selectGloveBtn.classList.remove('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+        selectTargetBtn.classList.add('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+        selectTargetBtn.classList.remove('bg-blue-600', 'text-white');
+        currentSelectionText.textContent = "Pitcher's Glove";
       }
-      
-      // Create a new target element
-      const target = document.createElement('div');
-      target.classList.add('target');
-      target.id = 'target';
-      target.style.left = `${x}px`;
-      target.style.top = `${y}px`;
-      
-      // Append the target marker to the strike zone container
-      strikeZone.appendChild(target);
     }
-
-    // Listen for touch events (for the iPad)
-    strikeZone.addEventListener('touchstart', function(event) {
-      event.preventDefault(); // Prevent default behaviors like scrolling
-      
-      const touch = event.touches[0];
+    
+    selectTargetBtn.addEventListener('click', function() {
+      currentSelection = 'target';
+      updateSelectionButtons();
+    });
+    
+    selectGloveBtn.addEventListener('click', function() {
+      currentSelection = 'glove';
+      updateSelectionButtons();
+    });
+    
+    function placeTarget(x, y) {
+      let target = document.getElementById('target');
+      if (!target) {
+        target = document.createElement('div');
+        target.id = 'target';
+        target.classList.add('target');
+        strikeZone.appendChild(target);
+      }
+      target.style.left = x + 'px';
+      target.style.top = y + 'px';
+      targetPosition = { x, y };
+    }
+    
+    function placeGlove(x, y) {
+      let glove = document.getElementById('glove');
+      if (!glove) {
+        glove = document.createElement('div');
+        glove.id = 'glove';
+        glove.classList.add('glove');
+        glove.textContent = '🧤';
+        strikeZone.appendChild(glove);
+      }
+      glove.style.left = x + 'px';
+      glove.style.top = y + 'px';
+      glovePosition = { x, y };
+    }
+    
+    function handleZoneClick(e) {
       const rect = strikeZone.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-      
-      placeTarget(x, y);
-    }, false);
-
-    // Also add a click listener for desktop testing (optional)
-    strikeZone.addEventListener('click', function(event) {
-      const rect = strikeZone.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      
-      placeTarget(x, y);
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (currentSelection === 'target') {
+        placeTarget(x, y);
+      } else {
+        placeGlove(x, y);
+      }
+    }
+    
+    strikeZone.addEventListener('click', handleZoneClick);
+    
+    resetBtn.addEventListener('click', function() {
+      const target = document.getElementById('target');
+      const glove = document.getElementById('glove');
+      if (target) target.remove();
+      if (glove) glove.remove();
+      targetPosition = null;
+      glovePosition = null;
     });
   </script>
 </body>
