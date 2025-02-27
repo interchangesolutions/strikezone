@@ -46,11 +46,12 @@
       transform: translate(-50%, -50%);
       transition: all 0.3s ease-out;
     }
-    /* Pitcher's glove marker style */
+    /* Catcher's glove marker style */
     .glove {
       position: absolute;
       transform: translate(-50%, -50%);
-      font-size: 3rem;
+      width: 64px;
+      height: 64px;
       transition: all 0.3s ease-out;
     }
   </style>
@@ -77,7 +78,7 @@
         <path d="M12 12v8"></path>
         <path d="M16 12v-2a2 2 0 0 1 4 0v2"></path>
       </svg>
-      Pitcher's Glove
+      Catcher's Glove
     </button>
     
     <button id="resetMarkers" class="flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
@@ -117,10 +118,25 @@
         selectGloveBtn.classList.remove('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
         selectTargetBtn.classList.add('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
         selectTargetBtn.classList.remove('bg-blue-600', 'text-white');
-        currentSelectionText.textContent = "Pitcher's Glove";
+        currentSelectionText.textContent = "Catcher's Glove";
       }
     }
     
+    function placeGlove(x, y) {
+      let glove = document.getElementById('glove');
+      if (!glove) {
+        glove = document.createElement('div');
+        glove.id = 'glove';
+        glove.classList.add('glove');
+        glove.innerHTML = '<img src="glove.png" alt="Catcher\'s Glove" class="w-full h-full" />';
+        strikeZone.appendChild(glove);
+      }
+      glove.style.left = x + 'px';
+      glove.style.top = y + 'px';
+      glovePosition = { x, y };
+    }
+
+
     selectTargetBtn.addEventListener('click', function() {
       currentSelection = 'target';
       updateSelectionButtons();
@@ -144,19 +160,19 @@
       targetPosition = { x, y };
     }
     
-    function placeGlove(x, y) {
-      let glove = document.getElementById('glove');
-      if (!glove) {
-        glove = document.createElement('div');
-        glove.id = 'glove';
-        glove.classList.add('glove');
-        glove.textContent = '🧤';
-        strikeZone.appendChild(glove);
-      }
-      glove.style.left = x + 'px';
-      glove.style.top = y + 'px';
-      glovePosition = { x, y };
-    }
+    // function placeGlove(x, y) {
+    //   let glove = document.getElementById('glove');
+    //   if (!glove) {
+    //     glove = document.createElement('div');
+    //     glove.id = 'glove';
+    //     glove.classList.add('glove');
+    //     glove.textContent = '🧤';
+    //     strikeZone.appendChild(glove);
+    //   }
+    //   glove.style.left = x + 'px';
+    //   glove.style.top = y + 'px';
+    //   glovePosition = { x, y };
+    // }
     
     function handleZoneClick(e) {
       const rect = strikeZone.getBoundingClientRect();
